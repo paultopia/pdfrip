@@ -36,11 +36,12 @@ func getPDFsRecursively(zipfile: URL) {
     let enumerator = fileManager.enumerator(atPath: destinationURL.path)
     print(enumerator)
     while let element = enumerator?.nextObject() as? String {
-        print(element)
         if element.hasSuffix("pdf") { // checks the extension
             print(element)
+            print(readPDF(element))
         }
     }
+    let _ = try? fileManager.removeItem(at: destinationURL)
 }
 
 func makeURLLocal(_ filename: String) -> URL {
