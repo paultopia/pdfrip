@@ -19,10 +19,15 @@ func readPDF(_ file: String) -> String? {
     return text
 }
 
-// print(readPDF("MasterCard_Consumer_Credit_Card_Agreement.pdf"))
 
+struct PDFInfo {
+    let text: String
+    let zipfile: String
+    let pdffile: String
+}
 
-func getPDFsRecursively(zipfile: URL) {
+func getPDFsRecursively(zipfile: URL) -> [PDFInfo] {
+    var out = [PDFInfo]()
     let fileManager = FileManager()
     let currentWorkingPath = fileManager.currentDirectoryPath
     var destinationURL = URL(fileURLWithPath: currentWorkingPath)
@@ -34,14 +39,15 @@ func getPDFsRecursively(zipfile: URL) {
         print("Extraction of ZIP archive failed with error:\(error)")
     }
     let enumerator = fileManager.enumerator(atPath: destinationURL.path)
-    print(enumerator)
     while let element = enumerator?.nextObject() as? String {
-        if element.hasSuffix("pdf") { // checks the extension
-            print(element)
-            print(readPDF(element))
+        if element.hasSuffix("pdf") {
+            if let text = readPDF(element) {
+                out.append(PDFInfo(text: text, zipfile: zipfile.lastPathComponent, pdffile: element))
+            }
         }
     }
     let _ = try? fileManager.removeItem(at: destinationURL)
+    return out
 }
 
 func makeURLLocal(_ filename: String) -> URL {
@@ -52,7 +58,36 @@ func makeURLLocal(_ filename: String) -> URL {
     return sourceURL
 }
 
-let zipfile = makeURLLocal("cardagts.zip")
-print(zipfile)
 
-getPDFsRecursively(zipfile: zipfile)
+let db = try! Connection("docs.sqlite3")
+let documents = Table("documents")
+let id = Expression<Int>("id")
+let text = Expression<String>("text")
+let zipfile = Expression<String>("zipfile")
+let pdffile = Expression<String>("pdffile")
+
+
+try! db.run(documents.create(ifNotExists: true) { t in
+               t.column(id, primaryKey: true)
+               t.column(text)
+               t.column(zipfile)
+               t.column(pdffile)
+           })
+
+func addToDb(_ pdf: PDFInfo) {
+    let insertOperation = documents.insert(text <- pdf.text,
+                                           zipfile <- pdf.zipfile,
+                                           pdffile <- pdf.pdffile)
+    let _ = try! db.run(insertOperation)
+}
+
+func ripPDFs(zipfile: URL){
+    let texts = getPDFsRecursively(zipfile: zipfile)
+    texts.forEach(addToDb)
+}
+
+let toRip = makeURLLocal("cardagts.zip")
+ripPDFs(zipfile: toRip)
+
+let numRows = try! db.scalar(documents.count)
+print(numRows)
