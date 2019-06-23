@@ -33,7 +33,7 @@ func getPDFsRecursively(zipfile: URL) {
     } catch {
         print("Extraction of ZIP archive failed with error:\(error)")
     }
-    let enumerator = fileManager.enumerator(at: destinationURL, includingPropertiesForKeys: nil)
+    let enumerator = fileManager.enumerator(atPath: destinationURL.path)
     print(enumerator)
     while let element = enumerator?.nextObject() as? String {
         print(element)
