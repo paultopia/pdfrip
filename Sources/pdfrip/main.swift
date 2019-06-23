@@ -81,13 +81,21 @@ func addToDb(_ pdf: PDFInfo) {
     let _ = try! db.run(insertOperation)
 }
 
-func ripPDFs(zipfile: URL){
+func ripPDFs(_ zipfile: URL){
     let texts = getPDFsRecursively(zipfile: zipfile)
     texts.forEach(addToDb)
 }
 
-let toRip = makeURLLocal("cardagts.zip")
-ripPDFs(zipfile: toRip)
 
+
+func listZipsInCurrentDirectory() -> [URL] {
+    let fileManager = FileManager()
+    let files = try! fileManager.contentsOfDirectory(atPath: ".") // forcing this because there's no reasonable way it wouldn't be able to see the current working directory, absent some bizarre race with another process deleting it or something
+    let zips = files.filter({ $0.hasSuffix(".zip") }).sorted(by: <)
+    return zips.map(makeURLLocal)
+}
+
+let toRip = listZipsInCurrentDirectory()
+toRip.forEach(ripPDFs)
 let numRows = try! db.scalar(documents.count)
 print(numRows)
