@@ -97,8 +97,8 @@ func listZipsInCurrentDirectory() -> [URL] {
 
 let toRip = listZipsInCurrentDirectory()
 toRip.forEach(ripPDFs)
-// let numRows = try! db.scalar(documents.count)
-// print(numRows)
+let numRows = try! db.scalar(documents.count)
+print("added every PDF document I can find.  The database currently contains \(numRows) documents.")
 
 // for row in try! db.prepare(documents) {
 //     print(row[id])
